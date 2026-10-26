@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'cloudicraft-monitor'
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # Express Backend application telemetry
+  - job_name: 'cloudicraft-backend'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['backend:5001']
+        labels:
+          app: 'cloudicraft'
+          service: 'backend'
+          environment: 'production'
+
+  # Node Exporter (Host machine telemetry)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor (Docker container resource telemetry)
+  - job_name: 'cadvisor'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['cadvisor:8080']

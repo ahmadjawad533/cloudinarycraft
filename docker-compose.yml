@@ -1,0 +1,119 @@
+services:
+  # Edge Gateway & Reverse Proxy
+  reverse-proxy:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: cloudicraft/reverse-proxy:latest
+    container_name: cloudicraft-proxy
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend-net
+      - backend-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/gateway-health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # React Single Page Application (Frontend)
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    image: cloudicraft/client:latest
+    container_name: cloudicraft-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - frontend-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Express REST API (Backend)
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: cloudicraft/server:latest
+    container_name: cloudicraft-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-yq115gst}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-832898144962491}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-Qf9L7FcrlpnaVDqk_gsnVqr0PdE}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5001/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # In-Memory Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    container_name: cloudicraft-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  frontend-net:
+    name: cloudicraft-frontend-net
+  backend-net:
+    name: cloudicraft-backend-net
+
+volumes:
+  redis-data:
+    driver: local

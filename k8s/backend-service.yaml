@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: cloudicraft-studio
+  labels:
+    app.kubernetes.io/name: cloudicraft-studio
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5001
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: cloudicraft-backend

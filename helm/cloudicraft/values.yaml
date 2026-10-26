@@ -1,0 +1,94 @@
+# Default values for cloudicraft.
+global:
+  environment: production
+
+replicaCount:
+  frontend: 2
+  backend: 2
+  redis: 1
+
+image:
+  registry: ghcr.io
+  repositoryOwner: ahmadjawad533
+  pullPolicy: IfNotPresent
+  frontend:
+    repository: cloudicraft-client
+    tag: "latest"
+  backend:
+    repository: cloudicraft-server
+    tag: "latest"
+  redis:
+    repository: redis
+    tag: "7-alpine"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "cloudicraft-sa"
+
+config:
+  nodeEnv: "production"
+  port: 5001
+  cloudinaryCloudName: "yq115gst"
+
+secrets:
+  cloudinaryApiKey: "832898144962491"
+  cloudinaryApiSecret: "Qf9L7FcrlpnaVDqk_gsnVqr0PdE"
+
+service:
+  frontend:
+    type: ClusterIP
+    port: 80
+  backend:
+    type: ClusterIP
+    port: 5001
+  redis:
+    type: ClusterIP
+    port: 6379
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "30m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  host: "studio.cloudicraft.io"
+  tls:
+    enabled: true
+    secretName: "cloudicraft-tls"
+
+resources:
+  frontend:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  backend:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  redis:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 80
+
+redisPersistence:
+  enabled: true
+  size: 2Gi
+  accessMode: ReadWriteOnce

@@ -1,0 +1,9 @@
+aws_region          = "us-east-1"
+environment         = "production"
+project_name        = "cloudicraft-studio"
+vpc_cidr            = "10.0.0.0/16"
+cluster_version     = "1.30"
+node_instance_types = ["t3.medium"]
+min_nodes           = 2
+max_nodes           = 6
+desired_nodes       = 3

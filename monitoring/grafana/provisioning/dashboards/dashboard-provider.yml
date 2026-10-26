@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'CloudiCraft Dashboards'
+    orgId: 1
+    folder: 'CloudiCraft'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

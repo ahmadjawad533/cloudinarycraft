@@ -1,0 +1,36 @@
+services:
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: builder
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    healthcheck:
+      disable: true
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: runner
+    command: node --watch server.js
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-yq115gst}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-832898144962491}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-Qf9L7FcrlpnaVDqk_gsnVqr0PdE}
+    healthcheck:
+      disable: true

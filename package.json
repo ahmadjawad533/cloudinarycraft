@@ -5,6 +5,8 @@
   "scripts": {
     "server": "cd server && node server.js",
     "client": "cd client && npm run dev",
+    "test": "npm --prefix server test",
+    "build:client": "npm --prefix client run build",
     "install:all": "cd server && npm install && cd ../client && npm install"
   },
   "keywords": [

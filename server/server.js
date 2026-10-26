@@ -3,11 +3,24 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const client = require('prom-client');
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5001;
+
+// Prometheus metrics setup
+const register = new client.Registry();
+client.collectDefaultMetrics({ register, prefix: 'cloudicraft_' });
+
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'cloudicraft_http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 1.5, 2, 5],
+});
+register.registerMetric(httpRequestDurationMicroseconds);
 
 // Helper to sanitize environment variables and trim whitespace/newlines/quotes
 function getCloudinaryConfig() {
@@ -31,10 +44,54 @@ cloudinary.config(getCloudinaryConfig());
 app.use(cors());
 app.use(express.json());
 
+// Metrics collection middleware
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  res.on('finish', () => {
+    const duration = process.hrtime(start);
+    const durationInSeconds = duration[0] + duration[1] / 1e9;
+    const route = req.route ? req.route.path : req.path;
+    httpRequestDurationMicroseconds
+      .labels(req.method, route, res.statusCode)
+      .observe(durationInSeconds);
+  });
+  next();
+});
+
 // Ensure Cloudinary is always configured with sanitized credentials on each serverless invocation
 app.use((req, res, next) => {
   cloudinary.config(getCloudinaryConfig());
   next();
+});
+
+// Liveness & Readiness health probe
+const handleHealth = (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'cloudicraft-backend',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+};
+app.get('/healthz', handleHealth);
+app.get('/api/healthz', handleHealth);
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err);
+  }
+});
+app.get('/api/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err);
+  }
 });
 
 // In-memory upload handling via multer

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudicraft-config
+  namespace: cloudicraft-studio
+  labels:
+    app.kubernetes.io/name: cloudicraft-studio
+    app.kubernetes.io/component: config
+data:
+  NODE_ENV: "production"
+  PORT: "5001"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  CLOUDINARY_CLOUD_NAME: "yq115gst"

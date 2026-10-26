@@ -1,0 +1,16 @@
+apiVersion: v2
+name: cloudicraft
+description: Enterprise Helm Chart for CloudiCraft Studio Media Transformation Suite
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - media
+  - cloudinary
+  - react
+  - express
+  - devops
+home: https://github.com/ahmadjawad533/CloudiCraft-Studio
+maintainers:
+  - name: SRE Operations Team
+    email: devops@cloudicraft.io
